@@ -1,3 +1,6 @@
+# app.py
+# pip install streamlit pinecone pandas PyPDF2 openpyxl
+
 import os
 import re
 import time
@@ -8,23 +11,23 @@ import streamlit as st
 import pandas as pd
 from PyPDF2 import PdfReader
 from pinecone import Pinecone
-from dotenv import load_dotenv
-
-# Load environment variables
-load_dotenv()
 
 # === CONFIGURE YOUR KEYS/HOSTS ===
 PINECONE_API_KEY   = os.getenv("PINECONE_API_KEY")
-VECTOR_INDEX_HOST  = os.getenv("PINECONE_VECTOR_HOST")
-SPARSE_INDEX_HOST  = os.getenv("PINECONE_SPARSE_HOST")
+VECTOR_HOST        = os.getenv("PINECONE_VECTOR_HOST")
+SPARSE_HOST        = os.getenv("PINECONE_SPARSE_HOST")
+GEMINI_API_KEY     = os.getenv("GEMINI_API_KEY")
 NAMESPACE_VECTOR   = "resume-experience"
-NAMESPACE_SPARSE   = "resume-skills"    
+NAMESPACE_SPARSE   = "resume-skills"
+
+
+
 # =================================
 
 # Initialize Pinecone
-pc           = Pinecone(api_key=PINECONE_API_KEY)
-vector_index = pc.Index(host=VECTOR_INDEX_HOST)
-sparse_index = pc.Index(host=SPARSE_INDEX_HOST)
+pc            = Pinecone(api_key=PINECONE_API_KEY)
+vector_index  = pc.Index(host=VECTOR_HOST)
+sparse_index  = pc.Index(host=SPARSE_HOST)
 
 def extract_project_experience(pdf_path: str) -> str:
     reader = PdfReader(pdf_path)
@@ -33,14 +36,15 @@ def extract_project_experience(pdf_path: str) -> str:
     return m.group(1).strip() if m else ""
 
 def upsert_candidate(emp_id, name, loc, exp, role, skills, resume_folder):
+    # metadata
     meta = {
         "location":     loc,
         "experience":   exp,
         "current_role": role
     }
 
-    # Vector upsert: project experience
-    fname    = f"{emp_id}_{name.replace(' ', '_')}.pdf"
+    # 1) Vector upsert: project experience
+    fname = f"{emp_id}_{name.replace(' ', '_')}.pdf"
     pdf_path = os.path.join(resume_folder, fname)
     try:
         proj_text = extract_project_experience(pdf_path)
@@ -54,17 +58,18 @@ def upsert_candidate(emp_id, name, loc, exp, role, skills, resume_folder):
     except FileNotFoundError:
         st.error(f"Missing resume file: {fname}")
 
-    # Sparse upsert: skills
+    # 2) Sparse upsert: skills
     sparse_index.upsert_records(
         NAMESPACE_SPARSE,
         [{ "_id": emp_id, "text": skills, **meta }]
     )
 
-st.title("📄 Resume → Pinecone Upserter")
+st.title("Upload associate profiles")
+
 st.markdown("""
 Upload:
 - A `.zip` containing all resumes named like `EMP-XXXX_Name.pdf`  
-- An Excel (`.xlsx`/`.xls`) with columns exactly:
+- An Excel (`.xlsx`) with columns exactly:
   `Employee ID, Name, Location, Experience (Years), Current Role, Skills`
 """)
 
@@ -97,6 +102,7 @@ if st.button("▶️ Process and Upsert") and zip_uploader and excel_uploader:
                 skills        = row["Skills"],
                 resume_folder = tmpdir
             )
+            # update progress
             percent = int((idx + 1) / total * 100)
             prog.progress(percent)
             time.sleep(0.2)  # throttle
