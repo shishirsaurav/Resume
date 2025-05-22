@@ -10,8 +10,8 @@ load_dotenv()
 
 # === CONFIG: use env vars or hardcode ===\
 PINECONE_API_KEY   = os.getenv("PINECONE_API_KEY")
-VECTOR_HOST        = os.getenv("PINECONE_VECTOR_HOST")
-SPARSE_HOST        = os.getenv("PINECONE_SPARSE_HOST")
+VECTOR_HOST        = os.getenv("VECTOR_HOST")
+SPARSE_HOST        = os.getenv("SPARSE_HOST")
 GEMINI_API_KEY     = os.getenv("GEMINI_API_KEY")
 VECTOR_NAMESPACE   = "resume-experience"
 SPARSE_NAMESPACE   = "resume-skills"
