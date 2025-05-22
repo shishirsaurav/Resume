@@ -2,6 +2,6 @@ streamlit
 pandas
 PyPDF2
 openpyxl
-pinecone-client
+pinecone
 google-genai
 python-dotenv
