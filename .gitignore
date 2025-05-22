@@ -1,0 +1,17 @@
+# .gitignore
+
+# Environment
+.env
+
+# Python cache
+__pycache__/
+*.py[cod]
+
+# Streamlit
+.streamlit/
+
+# IDE settings
+.vscode/
+
+# macOS
+.DS_Store
