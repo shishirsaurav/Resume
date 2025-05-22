@@ -6,18 +6,17 @@ from google.genai import types
 from pinecone import Pinecone
 from concurrent.futures import ThreadPoolExecutor, as_completed
 from dotenv import load_dotenv
-
-# Load environment variables
 load_dotenv()
 
-# === CONFIG: use env vars ===
+# === CONFIG: use env vars or hardcode ===\
 PINECONE_API_KEY   = os.getenv("PINECONE_API_KEY")
 VECTOR_HOST        = os.getenv("PINECONE_VECTOR_HOST")
 SPARSE_HOST        = os.getenv("PINECONE_SPARSE_HOST")
 GEMINI_API_KEY     = os.getenv("GEMINI_API_KEY")
 VECTOR_NAMESPACE   = "resume-experience"
 SPARSE_NAMESPACE   = "resume-skills"
-# ============================
+
+# ===============================
 
 # Initialize clients
 pc            = Pinecone(api_key=PINECONE_API_KEY)
@@ -78,13 +77,16 @@ def run_search(jd_text, md_filter, top_k=50):
 
 # --- Streamlit UI ---
 st.set_page_config(page_title="Bulk Candidate Matcher", layout="wide")
-st.title("🤖 Candidate Matcher: Bulk by Uploaded CSV")
+st.title("🤖 Upload Job description")
 
-st.markdown("""
-Upload a CSV/Excel with columns:
-`Requirement ID, Job Title, Role Level, Industry, Work Location, Summary`
-""")
-uploaded = st.file_uploader("Upload job.xlsx", type=["xlsx","xls"])
+st.markdown(
+    """
+    Upload a CSV with columns:
+    `Requirement ID, Job Title, Role Level, Industry, Work Location, Summary`
+    """
+)
+uploaded = st.file_uploader("Upload job.xlsx", type=["xlsx"])
+a=1
 if uploaded:
     df_jobs = pd.read_excel(uploaded)
     st.success(f"Loaded {len(df_jobs)} requirements.")
@@ -92,19 +94,18 @@ if uploaded:
     if st.button("Find Candidates for All Jobs"):
         with st.spinner("Running searches in parallel…"):
             futures = {}
-            with ThreadPoolExecutor(max_workers=min(10, len(df_jobs))) as exe:
+            with ThreadPoolExecutor(max_workers=min(10, len(df_jobs))) as executor:
                 for _, job in df_jobs.iterrows():
                     req_id = job["Requirement ID"]
                     filt   = build_filter(location=job["Work Location"], level=job["Role Level"])
-                    futures[exe.submit(run_search, job["Summary"], filt, 50)] = req_id
+                    futures[executor.submit(run_search, job["Summary"], filt, 50)] = req_id
 
+            # display only the jobs that had at least one match
             for fut in as_completed(futures):
-                req_id  = futures[fut]
+                req_id = futures[fut]
                 df_res, skills = fut.result()
 
-                st.subheader(f"Results for {req_id}")
-                if df_res.empty:
-                    st.warning(f"No matches for {req_id}.")
-                else:
+                if not df_res.empty:
+                    st.subheader(f"Results for {req_id}")
                     st.dataframe(df_res.reset_index(drop=True))
                     st.markdown(f"**Extracted skills:** {skills}")
