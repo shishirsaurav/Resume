@@ -14,8 +14,8 @@ from pinecone import Pinecone
 
 # === CONFIGURE YOUR KEYS/HOSTS ===
 PINECONE_API_KEY   = os.getenv("PINECONE_API_KEY")
-VECTOR_HOST        = os.getenv("PINECONE_VECTOR_HOST")
-SPARSE_HOST        = os.getenv("PINECONE_SPARSE_HOST")
+VECTOR_HOST        = os.getenv("VECTOR_HOST")
+SPARSE_HOST        = os.getenv("SPARSE_HOST")
 GEMINI_API_KEY     = os.getenv("GEMINI_API_KEY")
 NAMESPACE_VECTOR   = "resume-experience"
 NAMESPACE_SPARSE   = "resume-skills"
